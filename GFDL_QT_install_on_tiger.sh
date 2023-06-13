@@ -32,6 +32,7 @@ export PERL=""
 ./configure --prefix=$ROOT/udunits-1.12.11/
 make
 make install
+ln -s $ROOT/udunits-1.12.11 ~/local/udunits-1.12.11
 ###############################
 #install GFDL_QT
 ###############################

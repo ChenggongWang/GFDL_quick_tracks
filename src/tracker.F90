@@ -333,7 +333,7 @@
       endif
 
       !Initialize udunits; note that Fortran is limited to using udunits v1
-      if (utopen('/usr/local/udunits-1.12.11/etc/udunits.dat') /= 0) then
+      if (utopen('/home/cw55/local/udunits-1.12.11/etc/udunits.dat') /= 0) then
          print*, 'COULD NOT OPEN UDUNITS FILE. Stop.'
          stop 150
       endif

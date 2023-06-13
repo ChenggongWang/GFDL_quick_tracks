@@ -1312,7 +1312,7 @@
          !Storm file I/O
          do n=1,nstorm
             if (allstorms(n,4) == -1 .and. .not. save_untracked_storms) cycle
-            write(13,'(I8, I6, 3I4, 1x, I7, 7(3x, F10.2), 3x, E8.2, 3x, I5, 3x, F8.2, F16.2)') nstormtot+n, year, month, day, hour, allstorms(n,4), allstormval(n,1:8), max(0,int(allstormval(n,9))), allstormval(n,13), allstormval(n,12)/1.e6
+            write(13,'(I8, I6, 3I4, 1x, I7, 7(3x, F10.2), 3x, E9.2, 3x, I5, 3x, F8.2, F16.2)') nstormtot+n, year, month, day, hour, allstorms(n,4), allstormval(n,1:8), max(0,int(allstormval(n,9))), allstormval(n,13), allstormval(n,12)/1.e6
             if (useregionmask) then
                write(14,trim(region_format)) nstormtot+n, regions_wind(n,:)
                write(15,trim(region_format)) nstormtot+n, regions_snow(n,:)

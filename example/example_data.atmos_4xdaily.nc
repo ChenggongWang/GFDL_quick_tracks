@@ -1,0 +1,1 @@
+/home/cw55/GEOCLIM/cw55/HIRAM/work/ctl1880s_SST_control_tigercpu_intelmpi_18/POSTP/02000101.atmos_4xdaily.nc

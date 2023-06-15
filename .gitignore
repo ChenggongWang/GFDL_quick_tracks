@@ -1,0 +1,7 @@
+bin/*
+*.ipynb_checkpoints*
+*ntitled*
+udunits*
+example/dat.*
+example/log.*
+example/nml.*

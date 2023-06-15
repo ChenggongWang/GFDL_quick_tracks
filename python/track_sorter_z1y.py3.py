@@ -122,13 +122,7 @@ def date_parser(ss):
     if year < 1800:
         year = 1800 + np.mod(year,300)
     st = f'{int(year):04d}-{int(month):02d}-{int(day):02d} {int(hour):02d}:00:00'
-    print('test0',st)
-    tmp = pd.to_datetime(st)
-    print('test1',tmp)
-    #tmp = cftime.datetime(int(year),int(month),int(day),int(hour),)
-    #print('test2',tmp)
-    return tmp
-    #return cftime.datetime(st)
+    return pd.to_datetime(st)
     #return datetime(year, month, day, hour, 0, 0)
     
 

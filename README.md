@@ -1,8 +1,8 @@
-# Fork from [lharris4/GFDL_quick_tracks](https://github.com/lharris4/GFDL_quick_tracks)
+# Forked from [lharris4/GFDL_quick_tracks](https://github.com/lharris4/GFDL_quick_tracks)
 
 Update the sorter:
-- to python 3.
-- Use cftime to handle different calenders
+- to python 3 (with 2to3 tool)
+- Use cftime to handle wide date range (pandas only have realistic calender from [1677](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.min.html) - [2262](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.max.html))
 
 To do?:
 - replace basemap with cartopy

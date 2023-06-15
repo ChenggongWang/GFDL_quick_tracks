@@ -1,3 +1,14 @@
+# Fork from [lharris4/GFDL_quick_tracks](https://github.com/lharris4/GFDL_quick_tracks)
+
+Update the sorter:
+- to python 3.
+- Use cftime to handle different calenders
+
+To do?:
+- replace basemap with cartopy
+- solve the calendar issue in the tracker
+
+
 # Quick Tracks: The simple cyclone tracker
 
 Quick Tracks (QT) is intended to be a simple and efficient means of objectively identifying tropical and extratropical cyclones in gridded atmospheric data, typically either model or reanalysis output. QT is especially useful for identifying large numbers of cyclones in long datasets to produce climatologies or statistical seasonal/annual forecasts. QT is used heavily within GFDL to track TCs in the [SHiELD models](www.gfdl.noaa.gov/shield) or in [SPEAR](www.gfdl.noaa.gov); and previously in HiRAM and FLOR. A description of the method is given in the appendix of [Harris, Lin, and Tu (JClim, 2016)](https://journals.ametsoc.org/doi/abs/10.1175/JCLI-D-15-0389.1). 

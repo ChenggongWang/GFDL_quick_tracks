@@ -258,7 +258,7 @@
 
       character(len=40) :: new_name_lon, new_name_lat
 
-      character*100 :: timestring
+      character*100 :: timestring, timecalendar
       character*100 :: errstr
       character*400 :: current_filename, current_avg_filename = '', current_idfilename
       integer :: ios = 0, length = 0
@@ -510,6 +510,7 @@
          ! see also http://www.unidata.ucar.edu/software/netcdf/time/recs.html
          TIMECENTERS_UNIT = UTMAKE()
          call get_var_att_str(fid, name_time, 'units', timestring, nt == 1 .and. nfile == 1)
+         call get_var_att_str(fid, name_time, 'calendar', timecalendar, nt == 1 .and. nfile == 1)
          STATUS = UTDEC(trim(timestring), TIMECENTERS_UNIT)
          if (status /= 0) then
             print*, 'UTDEC FAILED ', status
@@ -1309,10 +1310,19 @@
          ! 16) Warm core flag
          ! 17) Storm area
 
+         !cgw: output the time unit and calender in header above
+         if (nt == 1) then
+              write(13, '(A)') timestring
+              write(13, '(A)') timecalendar
+         end if
          !Storm file I/O
          do n=1,nstorm
             if (allstorms(n,4) == -1 .and. .not. save_untracked_storms) cycle
             write(13,'(I8, I6, 3I4, 1x, I7, 7(3x, F10.2), 3x, E9.2, 3x, I5, 3x, F8.2, F16.2)') nstormtot+n, year, month, day, hour, allstorms(n,4), allstormval(n,1:8), max(0,int(allstormval(n,9))), allstormval(n,13), allstormval(n,12)/1.e6
+            !cgw: change to absolute time unit (as it in nc file)
+            !     output the time unit and calender in header above
+            !     handle the calender in sorter
+            write(13,'(I8, F16.2, 1x, I7, 7(3x, F10.2), 3x, E9.2, 3x, I5, 3x, F8.2, F16.2)') nstormtot+n, time8, allstorms(n,4), allstormval(n,1:8), max(0,int(allstormval(n,9))), allstormval(n,13), allstormval(n,12)/1.e6
             if (useregionmask) then
                write(14,trim(region_format)) nstormtot+n, regions_wind(n,:)
                write(15,trim(region_format)) nstormtot+n, regions_snow(n,:)
@@ -2563,75 +2573,75 @@
  end subroutine pmaxmin
 
 
- subroutine calendar(year, month, day, hour)
-      implicit none
-      integer, intent(inout) :: year              ! year
-      integer, intent(inout) :: month             ! month
-      integer, intent(inout) :: day               ! day
-      integer, intent(inout) :: hour
+! subroutine calendar(year, month, day, hour)
+!      implicit none
+!      integer, intent(inout) :: year              ! year
+!      integer, intent(inout) :: month             ! month
+!      integer, intent(inout) :: day               ! day
+!      integer, intent(inout) :: hour
+!!
+!! Local variables
+!!
+!      integer irem4,irem100
+!      integer mdays(12)                           ! number day of month 
+!      data mdays /31,28,31,30,31,30,31,31,30,31,30,31/
+!!
+!!***********************************************************************
+!!******         compute current GMT                               ******
+!!***********************************************************************
+!!
+!!**** consider leap year
+!!
+!      irem4    = mod( year, 4 )
+!      irem100  = mod( year, 100 )
+!      if( irem4 == 0 .and. irem100 /= 0) mdays(2) = 29
+!!
+!!!$      do 
+!!!$         if( month > 12 ) then
+!!!$            year   = year + 1
+!!!$            month  = 1
+!!!$         else
+!!!$            exit
+!!!$         end if
+!!!$      enddo
+!!!$
+!!!$      do 
+!!!$         if( day > mdays(month) ) then
+!!!$            day    = day - mdays(month)
+!!!$            month  = month + 1
+!!!$         else
+!!!$            exit
+!!!$         end if
+!!!$      enddo
+!!!$
+!!!$
+!!!$      do
+!!!$         if( hour >= 24 ) then
+!!!$            day    = day + 1
+!!!$            hour   = hour - 24
+!!!$         else
+!!!$            exit
+!!!$         end if
+!!!$      end do
+!         
 !
-! Local variables
+!      if( hour >= 24 ) then
+!        day    = day + 1
+!        hour   = hour - 24
+!      end if
 !
-      integer irem4,irem100
-      integer mdays(12)                           ! number day of month 
-      data mdays /31,28,31,30,31,30,31,31,30,31,30,31/
+!      if( day > mdays(month) ) then
+!        day    = day - mdays(month)
+!        month  = month + 1
+!      end if
+!      if( month > 12 ) then
+!        year   = year + 1
+!        month  = 1
+!      end if
 !
-!***********************************************************************
-!******         compute current GMT                               ******
-!***********************************************************************
 !
-!**** consider leap year
-!
-      irem4    = mod( year, 4 )
-      irem100  = mod( year, 100 )
-      if( irem4 == 0 .and. irem100 /= 0) mdays(2) = 29
-!
-!!$      do 
-!!$         if( month > 12 ) then
-!!$            year   = year + 1
-!!$            month  = 1
-!!$         else
-!!$            exit
-!!$         end if
-!!$      enddo
-!!$
-!!$      do 
-!!$         if( day > mdays(month) ) then
-!!$            day    = day - mdays(month)
-!!$            month  = month + 1
-!!$         else
-!!$            exit
-!!$         end if
-!!$      enddo
-!!$
-!!$
-!!$      do
-!!$         if( hour >= 24 ) then
-!!$            day    = day + 1
-!!$            hour   = hour - 24
-!!$         else
-!!$            exit
-!!$         end if
-!!$      end do
-         
-
-      if( hour >= 24 ) then
-        day    = day + 1
-        hour   = hour - 24
-      end if
-
-      if( day > mdays(month) ) then
-        day    = day - mdays(month)
-        month  = month + 1
-      end if
-      if( month > 12 ) then
-        year   = year + 1
-        month  = 1
-      end if
-
-
-      return
-  end subroutine calendar
+!      return
+!  end subroutine calendar
 
  subroutine get_height_field(is, ie, js, je, km, wz, pt, q, peln, zvir, zsurf)
   integer, intent(in):: is, ie, js, je, km

@@ -62,6 +62,6 @@ ${Tracker} ${inputname} > ${workdir}/log.runtrack-${runname}.out2 2>&1
 module load anaconda3
 conda activate tcanalysis
 python -u ${Sorter} -h 29.6  ${output_dir}/dat.${runname}-global  >> ${workdir}/log.runtrack-${runname}.out2
-
+ 
 exit
 

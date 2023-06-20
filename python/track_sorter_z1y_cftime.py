@@ -112,31 +112,23 @@ def max_run_of_true(bits):
 
 def sum_run_of_true(bits):
     return sum(run_of_true(bits))
+# use cftime to handle date of climate data
+def cftime_datetime_parser(datenum,units,calendar):
+    '''
+    parse time to datetime object with cftime
+    example:
+    list(
+        map(cftime_datetime_parser_new,trackerData.loc[:,'time'].values,
+             itertools.repeat(timeunits),
+             itertools.repeat(timecalendar)
+           )
+    )
 
-def cftime_datetime_parser(date):
-    if len(date) ==4:
-        year, month, day, hour = date
-        return cftime.datetime(year,month,day,hour)
-    else:
-        raise Exception('only configured/tested for year month day hour formate')
-        return None
-#def date_parser(ss):
-#    year, month, day, hour = ss.split()
-#    year = int(year)
-#    #Ugly hack for pd datetime,
-#    # might be fixed with cftime
-#    # todo list
-#    if year < 1800:
-#        year = 1800 + np.mod(year,300)
-#    st = f'{int(year):04d}-{int(month):02d}-{int(day):02d} {int(hour):02d}:00:00'
-#    print('test0',st)
-#    tmp = pd.to_datetime(st)
-#    print('test1',tmp)
-#    #tmp = cftime.datetime(int(year),int(month),int(day),int(hour),)
-#    #print('test2',tmp)
-#    return tmp
-#    #return cftime.datetime(st)
-#    #return datetime(year, month, day, hour, 0, 0)
+    '''
+    try:
+        return cftime.num2date(datenum, units=units,calendar=calendar)
+    except:
+        raise Exception(f'datenum={datenum}, units={units}, calendar={calendar}')
     
 
 def plot_the_track(m, lon, lat, TCmask, hurmask, startind):
@@ -324,6 +316,7 @@ if args:
 #Can modify this so that we can determine column data from a file header.
 #From that we can then import almost anything!
 unames = ['key', 'year', 'month', 'day', 'hour', 'stormID', 'lon', 'lat', 'minSLP', 'maxWind', 'maxPrec', 'maxRain', 'maxSnow', 'maxVort', 'numBlz', 'WC', 'Area']
+unames = ['key', 'time', 'stormID', 'lon', 'lat', 'minSLP', 'maxWind', 'maxPrec', 'maxRain', 'maxSnow', 'maxVort', 'numBlz', 'WC', 'Area']
 # dtype  = {'key': np.int32,
 #           'year': 'S4',
 #           'month': 'S2',
@@ -342,20 +335,23 @@ unames = ['key', 'year', 'month', 'day', 'hour', 'stormID', 'lon', 'lat', 'minSL
 #           'Area': np.float64 }
 
 start_clock('Get data')
-if getHeader:
-    trackerData = pd.read_csv(filename,sep='\s+', lineterminator='\n',
-                              comment='#', keep_date_col=True)
-else:
-    trackerData = pd.read_csv(filename,sep='\s+', lineterminator='\n',
-                              names=unames, comment='#', keep_date_col=True)
+with open(filename) as input_file:
+    head = [next(input_file) for _ in range(2)]
+# print(head)
+timeunits = head[0].split('  ')[0]
+timecalendar = head[1].split('  ')[0]
+print('timeunits:',timeunits)
+print('timecalendar:',timecalendar)
+trackerData = pd.read_csv(filename,sep='\s+', lineterminator='\n',
+                          names=unames, comment='#', 
+                          skiprows=[0, 1])
 #cgw: use cftime to parse date and set it as new column
-trackerData['cfdtime'] = list(map(cftime_datetime_parser,trackerData.loc[:,['year','month','day','hour']].values))
- 
-#timepart = trackerData[['year','month','day','hour']].astype('str')
-#times = pd.to_datetime((timepart['year'] + ' ' + timepart['month'] + ' ' + timepart['day'] + ' ' + timepart['hour']).values, format="%Y %m %d %H")
-    #times = pd.to_datetime(str(trackerData.year.values) + ' ' + str(trackerData.month.values) + ' ' + str(trackerData.day.values) + ' ' + str(trackerData.hour.values),"%Y %m %d %H")
-#trackerData.set_index(times, inplace=True)
-#trackerData = trackerData.drop(['year','month','day','hour'], axis=1)
+trackerData['cfdtime'] = list(
+                                map(cftime_datetime_parser,trackerData.loc[:,'time'].values,
+                                     itertools.repeat(timeunits),
+                                     itertools.repeat(timecalendar)
+                                   )
+                            ) 
     
 zooms = ( {'Name': 'World', 'ShortName': 'world', 'corners': (0, -80, 360, 80),
            'projection': 'mill','parallels': np.linspace(-90,90,5),

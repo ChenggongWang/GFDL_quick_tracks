@@ -50,7 +50,8 @@ import math
 #Allows script to run without a $DISPLAY set
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 filename='filename has not been set'
 startdate=None
@@ -131,9 +132,27 @@ def cftime_datetime_parser(datenum,units,calendar):
         raise Exception(f'datenum={datenum}, units={units}, calendar={calendar}')
     
 
-def plot_the_track(m, lon, lat, TCmask, hurmask, startind):
-    x, y = m(lon[startind:], lat[startind:])
 
+def plot_the_track_wraped(m, lon, lat, TCmask, hurmask, startind):
+    #Set up wrap-around
+    df = np.append(0,np.diff(lon))
+    side = np.cumprod(np.sign(180-abs(df))) < 0
+    if any(side):
+        sg = -np.sign(df[side][0])
+        lon2 = lon.copy()
+        lon3 = lon.copy()
+        lon3[side] += 360*sg
+        lon2[~side] -= 360*sg
+        plot_the_track(m, lon2, lat, TCmask, hurmask, startind)
+        plot_the_track(m, lon3, lat, TCmask, hurmask, startind)
+    else:
+        plot_the_track(m, lon, lat, TCmask, hurmask, startind)
+        
+
+def plot_the_track(m, lon, lat, TCmask, hurmask, startind):
+    # x, y = m(lon[startind:], lat[startind:])
+    # lon_new = np.where(lon>180,lon-360,lon)
+    x, y = lon[startind:], lat[startind:]
     xm = np.ma.MaskedArray(x,mask=~TCmask[startind:])
     ym = np.ma.MaskedArray(y,mask=~TCmask[startind:])
     xh = np.ma.MaskedArray(x,mask=~hurmask[startind:])
@@ -144,9 +163,9 @@ def plot_the_track(m, lon, lat, TCmask, hurmask, startind):
     #xm, ym = half_interp_track(xm, ym, TCmask)
     xh, yh = half_interp_track(xh.data, yh.data, hurmask[startind:])
 
-    m.plot(x,y,color='gray',linewidth=1.0)
-    m.plot(xm,ym,color='k',linewidth=1.25)
-    m.plot(xh,yh,color='r',linewidth=1.5)
+    m.plot(x,y,color='gray',linewidth=1.0, transform=ccrs.PlateCarree(),)
+    m.plot(xm,ym,color='k',linewidth=1.25, transform=ccrs.PlateCarree(),)
+    m.plot(xh,yh,color='r',linewidth=1.5, transform=ccrs.PlateCarree(),)
 
     if ~any(TCmask) and plotStormNumber:
         yoffset = 0.022*(m.ymax-m.ymin)
@@ -162,7 +181,7 @@ def plot_the_track(m, lon, lat, TCmask, hurmask, startind):
                      ha='center',va='center')
             plt.text(x[-1],y[-1]-yoffset,str(number),fontsize=9,
                      ha='center',va='top')
-
+            
 #NOTE: with more recent versions of numpy library
 #  weird things can happen if masked data is passed
 # to this routine; pass the unmasked data instead.
@@ -189,15 +208,17 @@ def half_interp_track(x, y, mask):
     return (xm, ym)
 
 def plot_density(H, xedges, yedges, cmap):
-    plt.figure().set_size_inches((8,3))
-    m =  Basemap(llcrnrlon=0., llcrnrlat=-60.,
-            urcrnrlon=360., urcrnrlat=60)
-    x, y = m(xedges,yedges)
-    m.pcolormesh(x,y,H.T,cmap=plt.get_cmap(cmap))
-    m.drawcoastlines(color='0.75')
-    m.drawparallels(np.linspace(-60,60,7),labels=[1,0,0,0])
-    m.drawmeridians(np.linspace(0,360,7),labels=[0,0,0,1])
-    plt.colorbar()
+    fig = plt.figure(figsize=(6, 4),dpi=200)
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+    # Limit the map to -60 degrees latitude and below.
+    ax.set_extent([-180, 180, -60, 60], ccrs.PlateCarree())
+    pcm = ax.pcolormesh(xedges,yedges,H.T,cmap=plt.get_cmap(cmap)) 
+    ax.add_feature(cfeature.LAND)
+    ax.add_feature(cfeature.COASTLINE)
+    ax.gridlines(draw_labels=True)
+    fig.colorbar(pcm, ax=ax, shrink=0.5, pad=0.1)
+    fig.tight_layout()
+    return fig
 
 def start_clock(clockname):
     if doTiming:
@@ -353,11 +374,11 @@ trackerData['cfdtime'] = list(
                                    )
                             ) 
     
-zooms = ( {'Name': 'World', 'ShortName': 'world', 'corners': (0, -80, 360, 80),
+zooms = ( {'Name': 'World', 'ShortName': 'world', 'corners': (-180, -80, 180, 80),
            'projection': 'mill','parallels': np.linspace(-90,90,5),
            'meridians': np.linspace(0,360,7),
            'domain': None}, 
-           {'Name': 'Northern Hemisphere', 'ShortName': 'NH', 'corners': (0, 0, 360, 60),
+           {'Name': 'Northern Hemisphere', 'ShortName': 'NH', 'corners': (-180, 0, 180, 60),
            'projection': 'mill','parallels': np.linspace(0,60,4),
            'meridians': np.linspace(0,360,7),
            'domain': path.Path(( (0,0), (0, 90), (360, 90), (360, 0) ))},
@@ -430,21 +451,25 @@ stormGroups = trackerData.groupby('stormID')
 stop_clock('Sort data')
 
 figs = []
-ms = []
-if doFigs:
-
+axs = []
+if doFigs: 
     for zoom in zooms:
-        figs += [plt.figure()]
-        m = Basemap(llcrnrlon=zoom['corners'][0], llcrnrlat=zoom['corners'][1],
-                    urcrnrlon=zoom['corners'][2], urcrnrlat=zoom['corners'][3])
-        ms += [m]
-        m.drawcoastlines(color='0.75')
-        #m.drawmapboundary(fill_color='#99ffff')
-        #m.drawmapboundary(fill_color='aqua')
-        m.fillcontinents(color='0.75')#,lake_color='#99ffff')
-        m.drawparallels(zoom['parallels'],labels=[1,1,0,0])
-        m.drawmeridians(zoom['meridians'],labels=[0,0,0,1])
-        plt.title(zoom['Name'] + ' cyclone tracks: ' + sdDispStr + ' to ' + edDispStr)
+        fig = plt.figure(figsize=[6, 4],dpi=200)
+        figs.append(fig)
+        ax = fig.add_subplot(
+            1, 1, 1, 
+            projection=ccrs.PlateCarree(central_longitude=180)
+        )
+        axs.append(ax)
+        # if zoom == 'world':
+        #     ax.set_global()
+        ax.set_extent([zoom['corners'][0],  zoom['corners'][2],
+                       zoom['corners'][1],  zoom['corners'][3]], 
+                      crs=ccrs.PlateCarree())
+        ax.add_feature(cfeature.LAND)
+        ax.add_feature(cfeature.COASTLINE)
+        ax.gridlines(draw_labels=True)
+        plt.title(f'{zoom["Name"]} cyclone tracks: {sdDispStr} to {edDispStr}')
     
 if not doWarmCore:
     outfileprefix  += '.z1y-noWC'
@@ -680,17 +705,10 @@ for stormID, thisstorm in stormGroups:
 
     start_clock('Storm I/O')
     if doFigs:
-        for m, fig in zip(ms, figs):
+        for ax, fig in zip(axs, figs):
             plt.figure(fig.number)
-            if any(side):
-                plot_the_track(m, lon2, thisstorm['lat'].values,
-                          TS, hur, firstTS)
-                plot_the_track(m, lon3, thisstorm['lat'].values,
-                           TS, hur, firstTS)
-            else:
-                plot_the_track(m, lon, thisstorm['lat'].values,
-                               TS, hur, firstTS)
-
+            plot_the_track_wraped(ax, lon, thisstorm['lat'].values,
+                                  TS, hur, firstTS) 
 
     # Storm I/0
     start_clock('to_string 2')
@@ -755,31 +773,31 @@ start_clock('Finish')
 
 if doFigs:
 
-    for m, fig, zoom in zip(ms, figs, zooms):
+    for ax, fig, zoom in zip(axs, figs, zooms):
         plt.figure(fig.number)
-        plt.savefig(outfileprefix  + '.'+ zoom['ShortName'] + '.' + datesuffix + '.png',
-                    bbox_inches='tight')
+        # plt.savefig(outfileprefix  + '.'+ zoom['ShortName'] + '.' + datesuffix + '.png',
+        #             bbox_inches='tight')
+        plt.savefig(f'{outfileprefix}.{zoom["ShortName"]}.{datesuffix}.png',bbox_inches='tight')
 
-    # Plot histograms
-    plot_density(Hcy, xedges, yedges, 'Greens')
-    plt.title('Cyclone storm-days:\n ' + sdDispStr + ' to ' + edDispStr)
-    plt.savefig(outfileprefix  + '.cy.' + datesuffix + '.png',
-                bbox_inches='tight')
-
-    plot_density(Htc, xedges, yedges, 'Greys')
-    plt.title('Tropical cyclone storm-days:\n ' + sdDispStr + ' to ' + edDispStr)
-    plt.savefig(outfileprefix  + '.TC.' + datesuffix + '.png',
-                bbox_inches='tight')
-
-    plot_density(Hhur, xedges, yedges, 'Reds')
-    plt.title('Hurricane/typhoon storm-days:\n ' + sdDispStr + ' to ' + edDispStr)
-    plt.savefig(outfileprefix  + '.hur.' + datesuffix + '.png',
-                bbox_inches='tight')
-
-    plot_density(genesis, xedges, yedges, 'Reds')
-    plt.title('Tropical cyclone genesis events:\n ' + sdDispStr + ' to ' + edDispStr)
-    plt.savefig(outfileprefix  + '.gen.' + datesuffix + '.png',
-                bbox_inches='tight')
+    # Plot 2D histograms
+    data = {'cy': Hcy,
+            'TC': Htc,
+            'hur': Hhur,
+            'gen': genesis}
+    data_long_name = {'cy':'Cyclone storm-days',
+                      'TC':'Tropical cyclone storm-days',
+                      'hur':'Hurricane/typhoon storm-days',
+                      'gen':'Tropical cyclone genesis events'}
+    data_cmaps = {'cy':'Greens',
+                  'TC':'Greys',
+                  'hur':'Reds',
+                  'gen':'Blues'}
+    fig_density = []
+    for var in data.keys():
+        fig = plot_density(data[var], xedges, yedges,data_cmaps[var])
+        plt.title(f'{data_long_name[var]}:\n {sdDispStr} to {edDispStr}')
+        fig_density.append(fig)
+        plt.savefig(f'{outfileprefix}.{var}.{datesuffix}.png',bbox_inches='tight')
 
     #Save histograms
     np.savez(outfileprefix  + '.hist' + datesuffix,

@@ -56,11 +56,11 @@ EOF
 cat $inputname
 # tee for debug purpose
 #${Tracker} ${inputname} 2>&1| tee ${workdir}/log.runtrack-${runname}.out 
-${Tracker} ${inputname} > ${workdir}/log.runtrack-${runname}.out2 2>&1
+#${Tracker} ${inputname} > ${workdir}/log.runtrack-${runname}.out2 2>&1
 
 
 module load anaconda3
-conda activate tcanalysis
+conda activate tcanalysis_py3
 python -u ${Sorter} -h 29.6  ${output_dir}/dat.${runname}-global  >> ${workdir}/log.runtrack-${runname}.out2
  
 exit

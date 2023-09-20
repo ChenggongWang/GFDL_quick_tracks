@@ -22,9 +22,9 @@ if [[ -z ${runname+x} ]] #check if $runname is not set
 then
     if [[ $# > 0 ]]
     then
-	runname=$1
+        runname=$1
     else
-	runname=example_data
+        runname=example_data
     fi
 fi
 echo $runname
@@ -56,7 +56,7 @@ EOF
 cat $inputname
 # tee for debug purpose
 #${Tracker} ${inputname} 2>&1| tee ${workdir}/log.runtrack-${runname}.out 
-#${Tracker} ${inputname} > ${workdir}/log.runtrack-${runname}.out2 2>&1
+${Tracker} ${inputname} > ${workdir}/log.runtrack-${runname}.out2 2>&1
 
 
 module load anaconda3

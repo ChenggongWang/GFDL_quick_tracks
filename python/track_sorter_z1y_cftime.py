@@ -359,16 +359,16 @@ start_clock('Get data')
 with open(filename) as input_file:
     head = [next(input_file) for _ in range(2)]
 # print(head)
-timeunits = head[0].split('  ')[0]
-timecalendar = head[1].split('  ')[0]
+timeunits = head[0].split('  ')[0][1:]
+timecalendar = head[1].split('  ')[0][1:]
 print('timeunits:',timeunits)
 print('timecalendar:',timecalendar)
 trackerData = pd.read_csv(filename,sep='\s+', lineterminator='\n',
-                          names=unames, comment='#', 
-                          skiprows=[0, 1])
+                          names=unames, comment='#', )
 #cgw: use cftime to parse date and set it as new column
 trackerData['cfdtime'] = list(
-                                map(cftime_datetime_parser,trackerData.loc[:,'time'].values,
+                                map( cftime_datetime_parser,
+                                     trackerData.loc[:,'time'].values,
                                      itertools.repeat(timeunits),
                                      itertools.repeat(timecalendar)
                                    )
@@ -567,10 +567,8 @@ for stormID, thisstorm in stormGroups:
         stop_clock('Storm count')
 
         start_clock('to_string 1')
-        ar = thisstorm[['lon','lat','minSLP','maxWind','WC']]
-        #st = ar.to_string(header=False,index_names=False) + '\n' #+ '\n'
-        #st = '\n'.join(ar.to_string().split('\n')[2:]) + '\n' 
-        st = '\n'.join(ar.to_string().split('\n')[2:]) + '\n' 
+        ar = thisstorm[['cfdtime','lon','lat','minSLP','maxWind','WC']]
+        st = '\n'.join(ar.to_string().split('\n')) + '\n' 
         stop_clock('to_string 1')
         st = datefmt.sub(r'    \1\2\3\4',st)
 
@@ -712,8 +710,8 @@ for stormID, thisstorm in stormGroups:
 
     # Storm I/0
     start_clock('to_string 2')
-    ar = thisstorm[firstTS:][['lon','lat','minSLP','maxWind','WC']]
-    st = '\n'.join(ar.to_string().split('\n')[2:]) + '\n' #+ '\n'
+    ar = thisstorm[firstTS:][['cfdtime','lon','lat','minSLP','maxWind','WC']]
+    st = '\n'.join(ar.to_string().split('\n')) + '\n' 
     stop_clock('to_string 2')
     st = datefmt.sub(r'    \1\2\3\4',st)
 

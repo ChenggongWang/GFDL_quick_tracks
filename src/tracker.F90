@@ -1312,8 +1312,8 @@
 
          !cgw: output the time unit and calender in header above
          if (nt == 1) then
-              write(13, '(A)') timestring
-              write(13, '(A)') timecalendar
+              write(13, '(A,A)') "#", timestring
+              write(13, '(A,A)') "#", timecalendar
          end if
          !Storm file I/O
          do n=1,nstorm
